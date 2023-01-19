@@ -15,14 +15,9 @@ QQuickFramebufferObject::Renderer *ImageBuffer::createRenderer() const
 }
 
 
-const Texture &ImageBuffer::image1() const
+const Texture &ImageBuffer::image() const
 {
-    return m_image1;
-}
-
-const Texture &ImageBuffer::image2() const
-{
-    return m_image2;
+    return m_image;
 }
 
 const bool &ImageBuffer::firstImage() const
@@ -30,15 +25,6 @@ const bool &ImageBuffer::firstImage() const
     return m_firstImage;
 }
 
-const bool &ImageBuffer::updateImage1() const
-{
-    return m_updateImage1;
-}
-
-void ImageBuffer::setUpdateImage1(const bool newflag)
-{
-    m_updateImage1 = newflag;
-}
 
 void ImageBuffer::updateImage(std::uint64_t index,
                               std::uint64_t width,
@@ -46,16 +32,9 @@ void ImageBuffer::updateImage(std::uint64_t index,
                             std::uint8_t *data)
 {
 
-    if (m_updateImage1) {
-        m_image1.width = width;
-        m_image1.height = height;
-        m_image1.data = data;
-    }
-    else {
-        m_image2.width = width;
-        m_image2.height = height;
-        m_image2.data = data;
-    }
+    m_image.width = width;
+    m_image.height = height;
+    m_image.data = data;
 
     if (index > 1) {
         m_firstImage = true;
@@ -93,12 +72,7 @@ void ImageBufferRenderer::synchronize(QQuickFramebufferObject *item)
     Q_UNUSED(obj);
 
     // sync values ...
-    if (obj->updateImage1())
-        m_texture = obj->image1();
-    else
-        m_texture = obj->image2();
-
-    obj->setUpdateImage1(~obj->updateImage1());
+    m_texture = obj->image();
 
     if (obj->firstImage())
         rendertexture1 = true;
