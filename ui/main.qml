@@ -15,11 +15,24 @@ ApplicationWindow {
     visible: true
     title: qsTr("Helium Droplet Nano-plasma System (HDNap)")
 
+    property int ymin: 0
+    property int ymax: 0
+    property int ystep: 0
+    property int runno: 0
+    property bool running: false
+    property string filename
+
+    FileValidator {
+        id: fvalidator
+        isExist: false
+    }
 
     // Initalise Camera Class
     Camera {
         id: cameraDevice
         objectName: "cameraDeviceobj"
+        liverefreshrate: 30
+        sumrefreshrate: 10
     }
 
     // Initalise DataCard
@@ -28,6 +41,38 @@ ApplicationWindow {
         objectName: "datacardDeviceobj"
     }
 
+    // Initalise Mirror Control
+    Mirror {
+        id: mirrors
+        objectName: "mirrorDeviceobj"
+    }
+
+
+    function scanMirror() {
+        // Function to get data at different mirror positions
+        for (let i = ymin; i < ymax; i += ystep) {
+            if (running) {
+                // stop acquisition
+                datacardDevice.stopacquiringData();
+                cameraDevice.stopacquiringImages();
+            }
+
+            // move mirror
+            mirrors.xyzpos[1] = i;
+            mirrors.setPos();
+
+            // Increase run no
+            runno += 1;
+
+            // start acquisition
+            datacardDevice.acquiringData();
+            cameraDevice.acquireImages()
+
+            // wait till completed
+        }
+    }
+
+    // Tab Bar
     TabBar {
         id: topbar
         width: parent.width
@@ -44,7 +89,9 @@ ApplicationWindow {
         }
     }
 
+    // Tab Content
     StackLayout {
+        id: slayout
         currentIndex: topbar.currentIndex
         anchors.top: topbar.bottom
         anchors.topMargin: 10
@@ -58,6 +105,9 @@ ApplicationWindow {
         // Control Center
         ControlPanelWindow {
             id: cpwi
+            running: running
+            run_no: runno
+            filename: filename
         }
 
         // View

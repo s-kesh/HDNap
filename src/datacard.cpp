@@ -459,13 +459,28 @@ void DataCard::acquireData(const int count, const QString filename)
 
     std::int64_t recordsize = m_settings->data(m_propmap["Record Size"],
                                                m_settings->ValueRole).toInt();
+    recordsize = 96;
 
+    m_size = recordsize;
 
     dataBuffer = new LiveData [BUFFSIZE];
     usedSemp = new QSemaphore;
     freeSemp = new QSemaphore(BUFFSIZE);
     for (int i = 0; i < BUFFSIZE; ++i)
         (dataBuffer + i)->data = new std::int16_t [recordsize + 100];
+
+    m_xlive = new float [recordsize];
+    m_ylive = new float [recordsize];
+    m_yavg = new float [recordsize];
+    m_yrollavg = new float [recordsize];
+
+    for (int i = 0; i < recordsize; ++i) {
+        m_xlive[i] = i;
+        m_ylive[i] = 0;
+        m_yavg[i] = 0;
+        m_yrollavg[i] = 0;
+    }
+
 
     setCount(count);
     setIndex(-1);
@@ -476,6 +491,9 @@ void DataCard::acquireData(const int count, const QString filename)
     m_liveSeries.clear();
     m_avgSeries.clear();
     m_rollavgSeries.clear();
+    m_liveSeries.resize(recordsize);
+    m_avgSeries.resize(recordsize);
+    m_rollavgSeries.resize(recordsize);
 
     // Setup Producer thread
     m_producer = new AcquireDataCard(m_session,
@@ -516,15 +534,20 @@ void DataCard::acquireData(const int count, const QString filename)
     }
 
     // Start Consumer
+
 //    m_consumer->init(recordsize,
 //                     100,
-//                     rollavgData.data(),
-//                     avgData.data());
+//                     m_liveSeries.data(),
+//                     m_rollavgSeries.data(),
+//                     m_avgSeries.data());
+
     m_consumer->init(recordsize,
                      100,
-                     &m_liveSeries,
-                     &m_rollavgSeries,
-                     &m_avgSeries);
+                     m_xlive,
+                     m_ylive,
+                     m_yrollavg,
+                     m_yavg);
+
     m_consumer->start();
 
     // start thread
@@ -567,6 +590,12 @@ void DataCard::stopacquiringData()
 
     delete [] dataBuffer;
 
+    delete [] m_xlive;
+    delete [] m_ylive;
+    delete [] m_yavg;
+    delete [] m_yrollavg;
+
+
     setIsAcquiring(false);
 }
 
@@ -578,7 +607,7 @@ void DataCard::handleSignal(uint64_t index)
     }
     setIndex(index);
 
-    emit resultReady();
+//    emit resultReady();
 
     if (m_index == m_count - 1)
         stopacquiringData();
@@ -591,8 +620,18 @@ void DataCard::updateSeries(QAbstractSeries *series)
         return;
     }
 
-    QXYSeries *xySeries = static_cast<QXYSeries *>(series);
-    xySeries->replace(m_liveSeries);
+    if (m_index > 1) {
+        for (int i = 0; i < m_size; ++i) {
+
+            m_liveSeries[i].setX(m_xlive[i]);
+            m_liveSeries[i].setY(m_ylive[i]);
+        }
+
+
+        QXYSeries *xySeries = static_cast<QXYSeries *>(series);
+        xySeries->replace(m_liveSeries);
+
+    }
 }
 
 void DataCard::updateAvgSeries(bool flag,
@@ -603,11 +642,23 @@ void DataCard::updateAvgSeries(bool flag,
         return;
     }
 
-    QXYSeries *xySeries = static_cast<QXYSeries *>(series);
-    if (flag)
-        xySeries->replace(m_avgSeries);
-    else
-        xySeries->replace(m_rollavgSeries);
+    if (m_index > 1) {
+        QXYSeries *xySeries = static_cast<QXYSeries *>(series);
+        if (flag) {
+            for (int i = 0; i < m_size; ++i) {
+                m_avgSeries[i].setX(m_xlive[i]);
+                m_avgSeries[i].setY(m_yavg[i]);
+            }
+            xySeries->replace(m_avgSeries);
+        }
+        else {
+            for (int i = 0; i < m_size; ++i) {
+                m_rollavgSeries[i].setX(m_xlive[i]);
+                m_rollavgSeries[i].setY(m_yrollavg[i]);
+            }
+            xySeries->replace(m_rollavgSeries);
+        }
+    }
 }
 
 void DataCard::Aq_ErrorHandler(long error)

@@ -10,10 +10,12 @@
 #include "imagebuffer.h"
 #include "hitbuffer.h"
 #include "datacard.h"
+#include "mirrorcontrol.h"
+#include "filevalidator.h"
+
 #include "qobject.h"
 #include "qqml.h"
 #include "qqmlcomponent.h"
-
 
 int main(int argc, char *argv[])
 {
@@ -21,6 +23,8 @@ int main(int argc, char *argv[])
 
     qmlRegisterType<Camera>("com.mycompany", 1, 0, "Camera");
     qmlRegisterType<DataCard>("com.mycompany", 1, 0, "DataCard");
+    qmlRegisterType<MirrorControl>("com.mycompany", 1, 0, "Mirror");
+    qmlRegisterType<FileValidator>("com.mycompany", 1, 0, "FileValidator");
 
     QQmlApplicationEngine engine;
     const QUrl url(u"qrc:/HDNap/ui/main.qml"_qs);
@@ -28,20 +32,30 @@ int main(int argc, char *argv[])
     QQmlComponent component(&engine, url);
     QObject *obj = component.create();
 
-    Camera *cam = qobject_cast<Camera*>(obj->findChild<QObject *>("cameraDeviceobj"));
-    DataCard *card = qobject_cast<DataCard*>(obj->findChild<QObject *>("datacardDeviceobj"));
 
-    ImageBuffer *img = qobject_cast<ImageBuffer *>(obj->findChild<QObject *>("imageviewobj"));
+    Camera *cam = qobject_cast<Camera*>(
+                obj->findChild<QObject *>("cameraDeviceobj"));
+
+//    DataCard *card = qobject_cast<DataCard*>(
+//                obj->findChild<QObject *>("datacardDeviceobj"));
+//    MirrorControl *mirror = qobject_cast<MirrorControl*>(
+//                obj->findChild<QObject *>("mirrorDeviceobj"));
+
+
+    ImageBuffer *img = qobject_cast<ImageBuffer *>(
+                obj->findChild<QObject *>("imageviewobj"));
     QObject::connect(cam, &Camera::resultReady,
                      img, &ImageBuffer::updateImage);
 
 
 
-    ImageBuffer *aimg = qobject_cast<ImageBuffer *>(obj->findChild<QObject *>("simageviewobj"));
+    ImageBuffer *aimg = qobject_cast<ImageBuffer *>(
+                obj->findChild<QObject *>("simageviewobj"));
     QObject::connect(cam, &Camera::avgReady,
                      aimg, &ImageBuffer::updateImage);
 
-    HitBuffer *hit = qobject_cast<HitBuffer *>(obj->findChild<QObject *>("hitviewobj"));
+    HitBuffer *hit = qobject_cast<HitBuffer *>(
+                obj->findChild<QObject *>("hitviewobj"));
     QObject::connect(cam, &Camera::itisaHit,
                      hit, &HitBuffer::updateImage);
 
@@ -51,7 +65,9 @@ int main(int argc, char *argv[])
             QCoreApplication::exit(-1);
     }, Qt::QueuedConnection);
 
-    QObject::connect(&engine, &QQmlApplicationEngine::quit, &QApplication::quit);
+    QObject::connect(&engine,
+                     &QQmlApplicationEngine::quit,
+                     &QApplication::quit);
 
     return app.exec();
 }

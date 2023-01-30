@@ -1,5 +1,6 @@
 #ifndef HITBUFFER_H
 #define HITBUFFER_H
+
 #define ROW 2
 #define COL 3
 
@@ -18,6 +19,8 @@ struct Textureh {
 class HitBuffer : public QQuickFramebufferObject
 {
     Q_OBJECT
+//    Q_PROPERTY(int row READ row WRITE setRow NOTIFY rowChanged)
+//    Q_PROPERTY(int col READ col WRITE setCol NOTIFY colChanged)
     QML_ELEMENT
 
 public:
@@ -26,17 +29,29 @@ public:
     const std::array<Textureh, ROW * COL> &images() const;
     const bool &firstImage() const;
 
+//    int row() const;
+//    void setRow(int newRow);
+
+//    int col() const;
+//    void setCol(int newCol);
+
 public slots:
     void updateImage(std::uint64_t index,
                      std::uint64_t width,
                      std::uint64_t height,
                      std::uint8_t *data);
 
-signals:
+//signals:
+
+//    void rowChanged();
+
+//    void colChanged();
 
 private:
     std::array<Textureh, ROW * COL> m_images;
     bool m_firstImage = false;
+//    int m_row = ROW;
+//    int m_col = COL;
 };
 
 class HitBufferRenderer
@@ -49,6 +64,12 @@ public:
     void synchronize(QQuickFramebufferObject *item) override;
     void render() override;
     QOpenGLFramebufferObject *createFramebufferObject(const QSize &size) override;
+
+//    int row() const;
+//    void setRow(int newRow);
+
+//    int col() const;
+//    void setCol(int newCol);
 
 private:
     void checkCompileErrors(GLuint shader, std::string type);
@@ -64,6 +85,8 @@ private:
 
     std::array<Textureh, ROW * COL> m_textures;
     bool rendertexture1 = false;
+//    int m_row = ROW;
+//    int m_col = COL;
 };
 
 

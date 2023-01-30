@@ -119,11 +119,6 @@ private:
     // Consumer thread
     LiveDataConsumer *m_consumer = nullptr;
 
-
-    // Buffer to store sum and avg image
-//    std::vector<std::int16_t> rollavgData;
-//    std::vector<std::int16_t> avgData;
-
     QSemaphore *usedSemp = nullptr;
     QSemaphore *freeSemp = nullptr;
 
@@ -131,6 +126,14 @@ private:
     QList<QPointF> m_liveSeries;
     QList<QPointF> m_avgSeries;
     QList<QPointF> m_rollavgSeries;
+
+    float *m_xlive = nullptr;
+    float *m_ylive = nullptr;
+    float *m_yavg = nullptr;
+    float *m_yrollavg = nullptr;
+
+    std::size_t m_size;
+
 };
 
 #endif // DATACARD_H

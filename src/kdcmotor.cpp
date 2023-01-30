@@ -1,5 +1,5 @@
 #include "kdcmotor.h"
-#include <Thorlabs.MotionControl.KCube.DCServo.h>
+//#include "Thorlabs.MotionControl.KCube.DCServo.h"
 
 #include <QtGlobal>
 #include <string>
@@ -76,6 +76,9 @@ bool KDCMotor::connect()
     if (m_status)
         return true;
 
+    setStatus(true);
+    return true;
+    /*
     // Connect
     if (CC_Open(std::to_string(m_serialno).c_str()) == 0) {
         setStatus(true);
@@ -85,6 +88,7 @@ bool KDCMotor::connect()
     } else {
         return false;
     }
+    */
 }
 
 bool KDCMotor::disconnect()
@@ -92,10 +96,12 @@ bool KDCMotor::disconnect()
     if(!m_status)
         return true;
 
+    /*
     // Stop Polling
     CC_StopPolling(std::to_string(m_serialno).c_str());
     // Close
     CC_Close(std::to_string(m_serialno).c_str());
+    */
 
     setStatus(false);
 
@@ -111,14 +117,14 @@ bool KDCMotor::goHome()
         return true;
 
     // Clear Message Queue
-    CC_ClearMessageQueue(std::to_string(m_serialno).c_str());
-    if (CC_CanHome(std::to_string(m_serialno).c_str())) {
-        CC_Home(std::to_string(m_serialno).c_str());
+//    CC_ClearMessageQueue(std::to_string(m_serialno).c_str());
+//    if (CC_CanHome(std::to_string(m_serialno).c_str())) {
+//        CC_Home(std::to_string(m_serialno).c_str());
         getPos();
         return true;
-    } else {
-        return false;
-    }
+//    } else {
+//        return false;
+//    }
 }
 
 void KDCMotor::movePos(double pos)
@@ -126,9 +132,9 @@ void KDCMotor::movePos(double pos)
     if(!m_status)
         return;
 
-    if (CC_NeedsHoming(std::to_string(m_serialno).c_str())) {
+//    if (CC_NeedsHoming(std::to_string(m_serialno).c_str())) {
         goHome();
-    }
+//    }
     moveDpos(toDevicePos(pos));
     getPos();
 }
@@ -137,7 +143,7 @@ void KDCMotor::moveDpos(int dpos)
 {
     if(!m_status)
         return;
-    CC_MoveToPosition(std::to_string(m_serialno).c_str(), dpos);
+//    CC_MoveToPosition(std::to_string(m_serialno).c_str(), dpos);
 }
 
 void KDCMotor::getPos()
@@ -145,7 +151,7 @@ void KDCMotor::getPos()
     /* Find the current position of motor */
     if(!m_status)
         return;
-    int pos = CC_GetPosition(std::to_string(m_serialno).c_str());
+    int pos = 0; //CC_GetPosition(std::to_string(m_serialno).c_str());
 
     setDpos(pos);
     setPos(toRealPos(m_dpos));
@@ -156,10 +162,10 @@ void KDCMotor::jog(bool flag)
     if(!m_status)
         return;
 
-    if(flag)
-        CC_MoveJog(std::to_string(m_serialno).c_str(), MOT_Forwards);
-    else
-        CC_MoveJog(std::to_string(m_serialno).c_str(), MOT_Backwards);
+//    if(flag)
+//        CC_MoveJog(std::to_string(m_serialno).c_str(), MOT_Forwards);
+//    else
+//        CC_MoveJog(std::to_string(m_serialno).c_str(), MOT_Backwards);
 
 }
 
@@ -168,7 +174,7 @@ void KDCMotor::findVelocity()
     if(!m_status)
         return;
 
-    CC_GetVelParams(std::to_string(m_serialno).c_str(), &m_dacceleration, &m_dvelocity);
+//    CC_GetVelParams(std::to_string(m_serialno).c_str(), &m_dacceleration, &m_dvelocity);
 
     setVelocity(toRealPos(m_dvelocity));
     setAcceleration(toRealPos(m_dacceleration));
@@ -187,7 +193,7 @@ void KDCMotor::changeDvelocity(int vel, int acc)
     if(!m_status)
         return;
 
-    CC_SetVelParams(std::to_string(m_serialno).c_str(), acc, vel);
+//    CC_SetVelParams(std::to_string(m_serialno).c_str(), acc, vel);
 }
 
 void KDCMotor::changeJogMode(double stepsize, bool flag)
@@ -195,10 +201,10 @@ void KDCMotor::changeJogMode(double stepsize, bool flag)
     if(!m_status)
         return;
 
-    if(flag)
-        CC_SetJogMode(std::to_string(m_serialno).c_str(), MOT_SingleStep, MOT_Immediate);
-    else
-        CC_SetJogMode(std::to_string(m_serialno).c_str(), MOT_Continuous, MOT_Immediate);
+//    if(flag)
+//        CC_SetJogMode(std::to_string(m_serialno).c_str(), MOT_SingleStep, MOT_Immediate);
+//    else
+//        CC_SetJogMode(std::to_string(m_serialno).c_str(), MOT_Continuous, MOT_Immediate);
 
     changeDjogMode(toDevicePos(stepsize));
 
@@ -210,7 +216,7 @@ void KDCMotor::changeDjogMode(int stepsize)
     if(!m_status)
         return;
 
-    CC_SetJogStepSize(std::to_string(m_serialno).c_str(), stepsize);
+//    CC_SetJogStepSize(std::to_string(m_serialno).c_str(), stepsize);
     setDjogstep(stepsize);
 }
 
@@ -219,8 +225,8 @@ void KDCMotor::findJogStep()
     if(!m_status)
         return;
 
-    setDjogstep(CC_GetJogStepSize(std::to_string(m_serialno).c_str()));
-    setJogstep(toRealPos(CC_GetJogStepSize(std::to_string(m_serialno).c_str())));
+//    setDjogstep(CC_GetJogStepSize(std::to_string(m_serialno).c_str()));
+//    setJogstep(toRealPos(CC_GetJogStepSize(std::to_string(m_serialno).c_str())));
 }
 
 double KDCMotor::toRealPos(int val)

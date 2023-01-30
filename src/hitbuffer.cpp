@@ -3,11 +3,11 @@
 #include <QOpenGLFramebufferObjectFormat>
 #include <QQuickOpenGLUtils>
 
-std::vector<float> find_vertices(int rows, int cols) {
+std::vector<float> find_vertices() {
     std::vector<float> vertices;
     float index = 0;
-    float rstepsize = 2.0 / rows;
-    float cstepsize = 2.0 / cols;
+    float rstepsize = 2.0 / ROW;
+    float cstepsize = 2.0 / COL;
     double i = -1;
     double j = -1;
     for (i = -1; i < 1; i += rstepsize) {
@@ -68,6 +68,7 @@ void HitBuffer::updateImage(uint64_t index,
                             uint64_t height,
                             uint8_t *data)
 {
+
     m_images[index % ( ROW * COL )].width = width;
     m_images[index % ( ROW * COL )].height = height;
     m_images[index % ( ROW * COL )].data = data;
@@ -83,6 +84,7 @@ void HitBuffer::updateImage(uint64_t index,
 
 HitBufferRenderer::HitBufferRenderer()
 {
+
     initializeOpenGLFunctions();
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
@@ -246,7 +248,7 @@ void HitBufferRenderer::createGeometry()
     unsigned int indices[2 * ( ROW * COL ) * 3];
 
 
-    std::vector<float> tver = find_vertices(ROW, COL);
+    std::vector<float> tver = find_vertices();
 
     for (int i = 0; i < tver.size(); ++i) {
         vertices[i] = tver[i];
@@ -300,3 +302,49 @@ void HitBufferRenderer::createTexture()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 }
+
+//int HitBufferRenderer::col() const
+//{
+//    return m_col;
+//}
+
+//void HitBufferRenderer::setCol(int newCol)
+//{
+//    m_col = newCol;
+//}
+
+//int HitBufferRenderer::row() const
+//{
+//    return m_row;
+//}
+
+//void HitBufferRenderer::setRow(int newRow)
+//{
+//    m_row = newRow;
+//}
+
+//int HitBuffer::row() const
+//{
+//    return m_row;
+//}
+
+//void HitBuffer::setRow(int newRow)
+//{
+//    if (m_row == newRow)
+//        return;
+//    m_row = newRow;
+//    emit rowChanged();
+//}
+
+//int HitBuffer::col() const
+//{
+//    return m_col;
+//}
+
+//void HitBuffer::setCol(int newCol)
+//{
+//    if (m_col == newCol)
+//        return;
+//    m_col = newCol;
+//    emit colChanged();
+//}

@@ -3,6 +3,9 @@ import QtQuick.Controls 2.15
 import QtQuick.Window 2.2
 
 Item {
+    property string filename
+    property bool running
+    property int run_no
 
     // Windows for undocking
     // Control Panel Window
@@ -42,6 +45,24 @@ Item {
         }
     }
 
+    Window {
+        id: mpwindow
+        objectName: "mpwobj"
+        visible: false
+        width: 640
+        height: 480
+        title: qsTr("HDNap Mirror Control Panel")
+
+        onClosing: {
+            mpanel.state = "docked"
+        }
+
+        Rectangle {
+            id: mtopbox
+            anchors.fill: parent
+        }
+    }
+
     // Docking station
     Rectangle {
         id: mainContDockRect
@@ -61,6 +82,9 @@ Item {
 
             FileBox {
                 id: filebox
+                running: running
+                run_no: run_no
+                filename: filename
             }
         }
 
@@ -90,6 +114,17 @@ Item {
         Rectangle {
             id: datacardcontroldock
             anchors.left: camcontroldock.right
+            anchors.top: gfileBox.bottom
+            anchors.topMargin: parent.gmargin
+            anchors.leftMargin: parent.gmargin
+            width: parent.width / 3 - 1.5 * parent.gmargin
+            height: parent.height * 7 / 10  - 1.5 * parent.gmargin
+            border.width: 2
+        }
+
+        Rectangle {
+            id: mirrorcontroldock
+            anchors.left: datacardcontroldock.right
             anchors.top: gfileBox.bottom
             anchors.topMargin: parent.gmargin
             anchors.leftMargin: parent.gmargin
@@ -177,6 +212,43 @@ Item {
                 }
 
                 cpwindow.visible = !cpwindow.visible;
+            }
+        }
+    }
+
+    // Mirror Control panel
+    Rectangle {
+        id: mpanel
+        anchors.fill: parent
+        state: "docked"
+
+        MirrorControl {
+            id: mirrorcontrol
+            anchors.top: parent.top
+            anchors.left: parent.left
+            height: parent.height * 7 / 10
+        }
+
+        states: [
+            State {
+                name: "undocked"
+                ParentChange { target: mpanel; parent: mtopbox }
+            },
+            State {
+                name: "docked"
+                ParentChange { target: mpanel; parent: mirrorcontroldock }
+            }
+        ]
+
+        Button {
+            onClicked: {
+                if (mpanel.state === "docked") {
+                    mpanel.state = "undocked";
+                } else {
+                    mpanel.state = "docked";
+                }
+
+                mpwindow.visible = !mpwindow.visible;
             }
         }
     }

@@ -21,6 +21,9 @@ public:
     ~LiveImageConsumer();
     void stop();
 
+    bool requested() const;
+    void setRequested(bool newRequested);
+
 signals:
     void resultReady(std::uint64_t index);
     void runFinished();
@@ -44,13 +47,15 @@ private:
     double m_thres = 0.0;
     std::uint64_t m_size = 1;
 
-    std::vector<std::uint32_t> m_sumReal;
+    MatrixTypef m_sumReal;
 
     std::uint8_t *m_sum = nullptr;
     std::uint8_t *m_avg = nullptr;
 
     std::string m_filepath;
     bool m_saveflag = false;
+
+    bool m_requested = false;
 };
 
 #endif // LIVEIMAGECONSUMER_H

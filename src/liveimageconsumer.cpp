@@ -1,8 +1,11 @@
 #include "liveimageconsumer.h"
+#include "global.h"
 #include <iostream>
 #include <QFile>
 #include <QDataStream>
 #include <string>
+
+#include <Eigen/Dense>
 
 void LiveImageConsumer::run()
 {
@@ -50,6 +53,7 @@ void LiveImageConsumer::init(double thres,
     m_avg = avgbuff;
     m_size = size;
     m_sumReal.resize(m_size);
+    m_sumReal.setZero();
 }
 
 void LiveImageConsumer::_run()
@@ -57,12 +61,12 @@ void LiveImageConsumer::_run()
     int index = 0;
     LiveImage *image = nullptr;
 
-    std::string filename = m_filepath + "image.bin";
-
-    std::cout << "File Name " << filename << std::endl;
+    std::string filename = m_filepath + "_image.bin";
     QFile file(filename.c_str());
     file.open(QIODevice::WriteOnly);
     QDataStream out(&file);
+
+    MapTypeU8 avg(m_avg, m_size);
 
     while (index < m_count && m_flag) {
         m_used->acquire();
@@ -73,33 +77,29 @@ void LiveImageConsumer::_run()
             m_sumReal.resize(m_size);
         }
 
-        std::uint64_t sumValue = 0;
-        for (size_t i  = 0; i < m_size; ++i) {
-            sumValue += *(image->data + i);
-         }
+        MapTypeConstU8 live(image->data, image->size);
+        MatrixTypef livef = live.cast<float>();
 
-        if ((double)sumValue / m_size > m_thres) {
+        if (livef.sum() / m_size > m_thres) {
             // It is a hit
             image->hit = true;
         }
 
-        for (size_t i  = 0; i < m_size; ++i) {
-            m_sumReal[i] += *(image->data + i);
-        }
+        m_sumReal += livef;
 
-        // Need to clamp sum at 255 otherwise it will overflow
-        // It is very slow operation
-        // need to find some fast way (maybe GPU?)
-        for (size_t i = 0; i < m_size; ++i) {
-            if (m_sumReal.at(i) > 255)
-                *(m_sum + i) = 255;
-            else
-                *(m_sum + i) = m_sumReal.at(i);
-        }
+        if (m_requested) {
+            // Need to clamp sum at 255 otherwise it will overflow
+            // It is very slow operation
+            // need to find some fast way (maybe GPU?)
+            for (size_t i = 0; i < m_size; ++i) {
+                if (m_sumReal[i] > 255)
+                    *(m_sum + i) = 255;
+                else
+                    *(m_sum + i) = m_sumReal[i];
+            }
 
-
-        for (size_t i = 0; i < m_size; ++i) {
-            *(m_avg + i) = m_sumReal.at(i) / (index + 1);
+            avg = (m_sumReal / (index + 1)).cast<std::uint8_t>();
+            m_requested = false;
         }
 
 
@@ -130,4 +130,14 @@ void LiveImageConsumer::_run()
 
     emit runFinished();
     m_free->release(BUFFSIZE);
+}
+
+bool LiveImageConsumer::requested() const
+{
+    return m_requested;
+}
+
+void LiveImageConsumer::setRequested(bool newRequested)
+{
+    m_requested = newRequested;
 }

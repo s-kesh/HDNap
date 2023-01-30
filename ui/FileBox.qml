@@ -7,11 +7,12 @@ Item {
     id: filenamebox
     anchors.fill: parent
     property bool running
+    property int run_no
     property date currentDate: new Date()
     property string dateString
     property string cleanPath
     property string folderPath
-    property int run_no: 0
+    property string filename
 
     function substring(str) {
         return str.substring(0, 2);
@@ -24,6 +25,11 @@ Item {
         property alias data: prefix.text
         property alias runNo: runno.value
         property alias postfixstring: postfix.text
+    }
+
+    MessageDialog {
+        id: fexist
+        visible: false
     }
 
     FolderDialog {
@@ -171,14 +177,15 @@ Item {
                 border.width: 1
 
                 TextField {
-                    id:filename
+                    id:fileName
                     anchors.fill: parent
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                     text: cleanPath + "/" + prefix.text + "/run_" + runno.value.toString() + "_" + postfix.text
                     onTextChanged: {
+                        filename = text;
                         folderPath = cleanPath + "/" + prefix.text;
-//                        maincontroller.filename = filename.text;
+                        fvalidator.folderPath = folderPath;
                     }
                 }
             }
@@ -189,16 +196,18 @@ Item {
                 width: parent.unit
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
-//                    maincontroller.createFolderPath(folderPath);
-//                    if (maincontroller.isFilenameExist()) {
-//                        console.log("File Already Exist");
-//                    }
-//                    else {
-//                        came.startacquiring(true);
-//                        running = true;
-//                    }
-                    cameraDevice.isSaving = true;
-                    cameraDevice.acquireImages(1000, "/var/home/keshav/Phd/beamlines/MPIK/HDNap/Files/");
+                    filename = fileName.text;
+                    fvalidator.filename = filename
+                    if (fvalidator.isExist) {
+                        fexist.text = 'File Alreay Exist!!';
+                        fexist.visible = true;
+                    }
+                    else {
+                        cameraDevice.isSaving = true;
+                        cameraDevice.acquireImages(1000, filename);
+                        datacardDevice.isSaving = true;
+                        datacardDevice.acquireData(1000, filename);
+                    }
                 }
             }
 
@@ -208,9 +217,8 @@ Item {
                 width: parent.unit
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
-//                    running = false;
-//                    maincontroller.stopacquiring();
                     cameraDevice.stopacquiringImages();
+                    datacardDevice.stopacquiringData();
                 }
             }
 
@@ -220,15 +228,11 @@ Item {
                 width: parent.unit
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: {
-//                    maincontroller.counttof = 1000000;
-//                    maincontroller.countvmi = 1000000;
-//                    maincontroller.startacquiring(false);
-
                     cameraDevice.isSaving = false;
-                    cameraDevice.acquireImages(10000000, "/var/home/keshav/Phd/beamlines/MPIK/HDNap/Files/");
+                    cameraDevice.acquireImages(10000000, filename);
 
                     datacardDevice.isSaving = false;
-                    datacardDevice.acquireData(10000000, "/var/home/keshav/Phd/beamlines/MPIK/HDNap/Files/");
+                    datacardDevice.acquireData(10000000, filename);
                 }
             }
         }

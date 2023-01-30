@@ -4,6 +4,7 @@
 #include <QObject>
 #include <qqml.h>
 #include <QString>
+#include <QTimer>
 
 #include "devicepropertymodel.h"
 #include "global.h"
@@ -37,6 +38,10 @@ class Camera : public QObject
     // Is it a hit?
     Q_PROPERTY(double hitthreshold READ hitthreshold WRITE setHitthreshold NOTIFY hitthresholdChanged)
 
+    // Refresh Rate
+    Q_PROPERTY(int liverefreshrate READ liverefreshrate WRITE setLiverefreshrate NOTIFY liverefreshrateChanged)
+    Q_PROPERTY(int sumrefreshrate READ sumrefreshrate WRITE setSumrefreshrate NOTIFY sumrefreshrateChanged)
+
     QML_SINGLETON
 
 public:
@@ -65,7 +70,22 @@ public:
     bool showSum() const;
     void setShowSum(bool newShowSum);
 
+    int liverefreshrate() const;
+    void setLiverefreshrate(int newLiverefreshrate);
+
+    int sumrefreshrate() const;
+    void setSumrefreshrate(int newSumrefreshrate);
+
+    bool lrequested() const;
+    bool srequested() const;
+    void setLrequested(bool newLrequested);
+    void setSrequested(bool newSrequested);
+
 public slots:
+    void setLreqTrue();
+    void setSreqTrue();
+
+
     void getProperties();
     void setProperties();
     void startsession();
@@ -119,6 +139,11 @@ signals:
                   std::uint8_t *data);
 
 
+    void liverefreshrateChanged();
+
+    void sumrefreshrateChanged();
+
+
 private:
     DevicePropertyModel *m_settings = nullptr;
     bool m_isConnected = false;
@@ -139,9 +164,6 @@ private:
     std::vector<std::uint8_t> sumImage;
     std::vector<std::uint8_t> avgImage;
 
-    // Hits
-    LiveImage *hitBuffer = nullptr;
-
     // Threads
 
     // Producer
@@ -157,6 +179,14 @@ private:
     int m_width;
     int m_height;
     bool m_showSum = true;
+
+
+    int m_liverefreshrate;
+    int m_sumrefreshrate;
+    QTimer *m_timer = nullptr;
+    QTimer *m_stimer = nullptr;
+    bool m_lrequested = false;
+    bool m_srequested = false;
 };
 
 #endif // CAMERA_H

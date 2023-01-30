@@ -4,8 +4,6 @@
 #include <QThread>
 #include <QSemaphore>
 #include "global.h"
-#include "qlist.h"
-#include "qpoint.h"
 
 class LiveDataConsumer : public QThread
 {
@@ -27,11 +25,18 @@ signals:
     void runFinished();
 
 public slots:
+//    void init (std::uint64_t size,
+//               std::uint64_t rollingsize,
+//               QPointF *live,
+//               QPointF *rollavg,
+//               QPointF *avg);
+
     void init (std::uint64_t size,
                std::uint64_t rollingsize,
-               QList<QPointF> *live,
-               QList<QPointF> *rollavg,
-               QList<QPointF> *avg);
+               float *x,
+               float *y,
+               float *rollavg,
+               float *avg);
 
 private:
     void _run();
@@ -43,20 +48,30 @@ private:
     QSemaphore *m_free;
     LiveData *m_dataBuffer;
 
-    std::vector<std::int32_t> m_realSum;
-    std::vector<std::int32_t> m_movingSum;
+//    std::vector<std::int32_t> m_realSum;
+//    std::vector<std::int32_t> m_movingSum;
+
+    MatrixTypef m_realSum;
+    MatrixTypef m_movingSum;
+
+    MatrixTypef ivec;
+
     std::uint64_t m_size = 0;
     std::uint64_t m_rollingsize = 0;
 
-//    std::int16_t *m_rollavg = nullptr;
-//    std::int16_t *m_avg = nullptr;
+    float *m_x = nullptr;
+    float *m_y = nullptr;
+    float *m_rollavg = nullptr;
+    float *m_avg = nullptr;
 
-    QList<QPointF> *m_live = nullptr;
-    QList<QPointF> *m_avg = nullptr;
-    QList<QPointF> *m_rollavg = nullptr;
+//    QPointF *m_live = nullptr;
+//    QPointF *m_avg = nullptr;
+//    QPointF *m_rollavg = nullptr;
 
     std::string m_filepath;
     bool m_saveflag = false;
+
+    bool m_requested = false;
 };
 
 #endif // LIVEDATACONSUMER_H

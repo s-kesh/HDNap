@@ -14,7 +14,6 @@ Camera::Camera(QObject *parent)
       m_hitthreshold(1.0),
       m_camera(nullptr),
       imageBuffer(nullptr),
-      hitBuffer(nullptr),
       m_producer(nullptr),
       m_consumer(nullptr),
       m_count(0)
@@ -357,10 +356,6 @@ void Camera::acquireImages(const int count,
     for (int i = 0; i < BUFFSIZE; ++i)
         (imageBuffer + i)->data = new std::uint8_t [m_width * m_height];
 
-    hitBuffer = new LiveImage [4];
-    for (int i = 0; i < 4; ++i)
-        (hitBuffer + i)->data = new std::uint8_t [m_width * m_height];
-
     setCount(count);
     setIndex(-1);
     sumImage.clear();
@@ -409,6 +404,13 @@ void Camera::acquireImages(const int count,
 
     setIsAcquiring(true);
 
+    m_timer =  new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &Camera::setLreqTrue);
+    m_stimer =  new QTimer(this);
+    connect(m_stimer, &QTimer::timeout, this, &Camera::setSreqTrue);
+
+    m_timer->start(1000 / m_liverefreshrate);
+    m_stimer->start(1000 / m_sumrefreshrate);
 }
 
 void Camera::stopacquiringImages()
@@ -423,6 +425,11 @@ void Camera::stopacquiringImages()
         emit warning("Nahi ho raha hain Acquire");
         return;
     }
+
+    m_timer->stop();
+    m_stimer->stop();
+    delete m_timer;
+    delete m_stimer;
 
     if (m_producer->isRunning()) {
         m_producer->stop();
@@ -447,11 +454,6 @@ void Camera::stopacquiringImages()
 
     delete [] imageBuffer;
 
-    for (int i = 0; i < 4; ++i)
-        delete [] (hitBuffer + i)->data;
-
-    delete [] hitBuffer;
-
     setIsAcquiring(false);
 }
 
@@ -465,32 +467,35 @@ void Camera::handleSignal(std::uint64_t index)
 
     // If hit, copy the result to hit buffer
     if (imageBuffer[index % BUFFSIZE].hit) {
-//        std::memcpy(hitBuffer[index % 4].data,
-//                imageBuffer[index % BUFFSIZE].data,
-//                m_width * m_height);
         emit itisaHit(index,
                       m_width, m_height,
                       imageBuffer[index % BUFFSIZE].data);
     }
 
     // emit the live image
-    emit resultReady(index,
-            m_width, m_height,
-            imageBuffer[index % BUFFSIZE].data);
+    if (m_lrequested) {
+        emit resultReady(index,
+                m_width, m_height,
+                imageBuffer[index % BUFFSIZE].data);
+        setLrequested(false);
+    }
 
     // If sum is asked, emit sum
     // else emit average
-    if (!m_showSum) {
-        emit avgReady(index,
-                      m_width, m_height,
-                      avgImage.data());
+    if (m_srequested) {
+        if (!m_showSum) {
+            emit avgReady(index,
+                          m_width, m_height,
+                          avgImage.data());
+        }
+        else {
+            emit avgReady(index,
+                          m_width, m_height,
+                          sumImage.data());
+        }
+        setSrequested(false);
+        m_consumer->setRequested(false);
     }
-    else {
-        emit avgReady(index,
-                      m_width, m_height,
-                      sumImage.data());
-    }
-
     if (m_index == m_count - 1)
         stopacquiringImages();
 }
@@ -510,6 +515,37 @@ void Camera::forceEmit()
                       m_width, m_height,
                       sumImage.data());
     }
+}
+
+bool Camera::srequested() const
+{
+    return m_srequested;
+}
+
+void Camera::setSrequested(bool newSrequested)
+{
+    m_srequested = newSrequested;
+}
+
+void Camera::setLreqTrue()
+{
+    setLrequested(true);
+}
+
+void Camera::setSreqTrue()
+{
+    setSrequested(true);
+    m_consumer->setRequested(true);
+}
+
+bool Camera::lrequested() const
+{
+    return m_lrequested;
+}
+
+void Camera::setLrequested(bool newLrequested)
+{
+    m_lrequested = newLrequested;
 }
 
 DevicePropertyModel *Camera::model() const
@@ -632,4 +668,30 @@ void Camera::setShowSum(bool newShowSum)
         return;
     m_showSum = newShowSum;
     emit showSumChanged();
+}
+
+int Camera::liverefreshrate() const
+{
+    return m_liverefreshrate;
+}
+
+void Camera::setLiverefreshrate(int newLiverefreshrate)
+{
+    if (m_liverefreshrate == newLiverefreshrate)
+        return;
+    m_liverefreshrate = newLiverefreshrate;
+    emit liverefreshrateChanged();
+}
+
+int Camera::sumrefreshrate() const
+{
+    return m_sumrefreshrate;
+}
+
+void Camera::setSumrefreshrate(int newSumrefreshrate)
+{
+    if (m_sumrefreshrate == newSumrefreshrate)
+        return;
+    m_sumrefreshrate = newSumrefreshrate;
+    emit sumrefreshrateChanged();
 }

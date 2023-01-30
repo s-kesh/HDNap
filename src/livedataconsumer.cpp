@@ -1,4 +1,6 @@
 #include "livedataconsumer.h"
+#include "Eigen/src/Core/Matrix.h"
+#include "global.h"
 #include <cstdint>
 #include <iostream>
 #include <QFile>
@@ -43,46 +45,46 @@ void LiveDataConsumer::stop()
 
 void LiveDataConsumer::init(uint64_t size,
                             uint64_t rollingsize,
-                            QList<QPointF> *live,
-                            QList<QPointF> *rollavg,
-                            QList<QPointF> *avg)
+                            float *x,
+                            float *y,
+                            float *rollavg,
+                            float *avg)
 {
     m_size = size;
     m_rollingsize = rollingsize;
+
     m_realSum.resize(m_size);
     m_movingSum.resize(m_size);
+    ivec.resize(m_size);
+    m_realSum.setZero();
+    m_movingSum.setZero();
 
-    m_live = live;
+    m_x = x;
+    m_y = y;
     m_avg = avg;
     m_rollavg = rollavg;
-}
 
-//void LiveDataConsumer::init(std::uint64_t size,
-//                            std::uint64_t rollingsize,
-//                            std::int16_t *rollavgbuff,
-//                            std::int16_t *avgbuff)
-//{
-//    m_size = size;
-//    m_rollingsize = rollingsize;
-//    m_realSum.resize(m_size);
-//    m_movingSum.resize(m_size);
-//    m_rollavg = rollavgbuff;
-//    m_avg = avgbuff;
-//}
+    for (int i = 0; i < m_size; ++i) {
+        ivec[i] = i;
+    }
+}
 
 void LiveDataConsumer::_run()
 {
     int index = 0;
     LiveData *data = nullptr;
-//    std::vector<double> xpoints;
-//    xpoints.resize(m_size);
 
-    std::string filename = m_filepath + "tof.bin";
+    m_requested = true;
 
-    std::cout << "File Name " << filename << std::endl;
+    std::string filename = m_filepath + "_tof.bin";
     QFile file(filename.c_str());
     file.open(QIODevice::WriteOnly);
     QDataStream out(&file);
+
+    MapTypef x(m_x, m_size);
+    MapTypef y(m_y, m_size);
+    MapTypef avg(m_avg, m_size);
+    MapTypef rollavg(m_rollavg, m_size);
 
     while (index < m_count && m_flag) {
         m_used->acquire();
@@ -93,50 +95,32 @@ void LiveDataConsumer::_run()
             m_size = data->size;
             m_realSum.resize(m_size);
             m_movingSum.resize(m_size);
-            m_live->resize(m_size);
-            m_avg->resize(m_size);
-            m_rollavg->resize(m_size);
-
-            for (int i = 0; i < m_size; ++i) {
-                m_live->operator[](i).setX(1000000 * (data->timeoffset + i * data->timefactor));
-            }
-            for (int i = 0; i < m_size; ++i) {
-                m_avg->operator[](i).setX(1000000 * (data->timeoffset + i * data->timefactor));
-            }
-            for (int i = 0; i < m_size; ++i) {
-                m_rollavg->operator[](i).setX(1000000 * (data->timeoffset + i * data->timefactor));
-            }
         }
 
-        double x = 0, y = 0;
-        for (int i = 0; i < data->size; ++i) {
-            y = *(data->data + data->firsttimepoint + i);
-            y = data->voltoffset + y * data->voltfactor;
-            y += index;
-            m_live->operator[](i).setY(y);
-        }
+        MapTypeConst16 llive(data->data + firsttimepoint, m_size);
 
 
-        for (size_t i = 0; i < m_size; ++i) {
-            m_realSum[i] += *(data->data + i + firsttimepoint);
-        }
+        float timefac = data->timefactor;
+        MatrixTypef timeoff(m_size);
+        timeoff.setConstant(data->timeoffset);
 
-        for (size_t i = 0; i < m_size; ++i) {
-            y = data->voltoffset + (m_realSum[i] / (index + 1)) * data->voltfactor;
-            y += index * 0.75;
-            m_avg->operator[](i).setY(y);
-        }
+        x = 1000000 * (timeoff + ivec * timefac);
 
-        for (size_t i = 0; i < m_size; ++i) {
-            m_movingSum[i] += *(data->data + i + firsttimepoint);
-        }
+        float voltfac = data->voltfactor;
+        MatrixTypef voltoff(m_size);
+        voltoff.setConstant(index); //data->voltoffset);
+
+        MatrixTypef livef = llive.cast<float>();
+
+        m_realSum += livef;
+        m_movingSum += livef;
+
+        y = livef * voltfac + voltoff;
+        avg = (m_realSum / (index + 1))* voltfac + voltoff;
 
         if ( (index + 1) % m_rollingsize == 0) {
-            for (size_t i = 0; i < m_size; ++i) {
-                y = data->voltoffset + (m_movingSum[i] / (index + 1)) * data->voltfactor;
-                m_rollavg->operator[](i).setY(y);
-                m_movingSum[i] = 0;
-            }
+            rollavg = (m_movingSum / (index + 1)) * voltfac + voltoff;
+            m_movingSum.setZero();
         }
 
         if (m_saveflag) {
@@ -145,7 +129,7 @@ void LiveDataConsumer::_run()
             */
 
             out.writeRawData((char*)data, sizeof(LiveData) - 8);
-            out.writeRawData((char*)data->data, firsttimepoint + m_size);
+            out.writeRawData((char*)(data->data + firsttimepoint), m_size);
         }
 
         emit resultReady(index);

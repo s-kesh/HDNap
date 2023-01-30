@@ -2,30 +2,8 @@ import QtQuick 2.6
 import QtCharts
 import QtQuick.Controls 2.15
 
-//Item {
-//    anchors.fill: parent
-//    id: zcview
-
-//    required property int xScaleZoom
-//    required property int yScaleZoom
-//    required property int xmin
-//    required property int xmax
-//    required property int ymin
-//    required property int ymax
-//    required property bool openGL
-//    required property string chartname
-//    required property string seriesname
-
-
 ChartView {
     id: zcview
-//    objectName: "zcviewobj"
-//    anchors.verticalCenter: parent.verticalCenter
-//    anchors.horizontalCenter: parent.horizontalCenter
-//    width: parent.width
-//    height: parent.height
-//    animationOptions: ChartView.NoAnimation
-//    theme: ChartView.ChartThemeDark
 
     required property bool openGL
     required property bool openGLSupported

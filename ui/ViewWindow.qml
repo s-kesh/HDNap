@@ -284,9 +284,19 @@ Item {
             tofview.changeWindow();
         }
 
-        Connections {
-            target: datacardDevice
-            function onResultReady() {
+//        Connections {
+//            target: datacardDevice
+//            function onResultReady() {
+//                datacardDevice.updateSeries(tofview.series(0));
+//            }
+//        }
+
+        Timer {
+            id: livetimer
+            repeat: true
+            interval: 1000 / 30
+            running: true
+            onTriggered: {
                 datacardDevice.updateSeries(tofview.series(0));
             }
         }
@@ -349,9 +359,20 @@ Item {
             tofsview.changeWindow();
         }
 
-        Connections {
-            target: datacardDevice
-            function onResultReady() {
+//        Connections {
+//            target: datacardDevice
+//            function onResultReady() {
+//                datacardDevice.updateAvgSeries(vstpanel.flag,
+//                                               tofsview.series(0));
+//            }
+//        }
+
+        Timer {
+            id: sumtimer
+            repeat: true
+            interval: 1000 / 10
+            running: true
+            onTriggered: {
                 datacardDevice.updateAvgSeries(vstpanel.flag,
                                                tofsview.series(0));
             }
